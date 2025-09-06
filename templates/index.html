@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Форма регистрации</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <h1>Регистрация</h1>
+    <form action="/submit" method="post">
+        <label>Имя: <input type="text" name="first_name"></label><br>
+        <label>Фамилия: <input type="text" name="last_name"></label><br>
+        <label>Email: <input type="email" name="email"></label><br>
+        <label>Телефон: <input type="tel" name="phone"></label><br>
+        <button type="submit">Отправить</button>
+    </form>
+    <div>
+    <a href="/data" class="btn">База данных</a>
+    </div>
+</body>
+</html>

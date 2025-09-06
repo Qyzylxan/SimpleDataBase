@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Данные пользователей</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Данные пользователей</h1>
+            <a href="/" class="btn">← Вернуться к форме</a>
+        </div>
+        
+        {{if .}}
+        <div class="controls">
+            <div class="selection-controls">
+                <button id="selectAllBtn" class="btn secondary" onclick="toggleSelectAll()">
+                    Выбрать все
+                </button>
+                <button id="deleteSelectedBtn" class="btn danger" onclick="prepareDeleteSelected()" disabled>
+                    🗑️ Удалить выбранные
+                </button>
+            </div>
+            <div class="stats">
+                <span id="selectedCount">Выбрано: 0</span>
+                <span>Всего записей: {{len .}}</span>
+            </div>
+        </div>
+        
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th width="50px">
+                            <input type="checkbox" id="selectAllCheckbox" onchange="toggleAllCheckboxes()">
+                        </th>
+                        <th>ID</th>
+                        <th>Имя</th>
+                        <th>Фамилия</th>
+                        <th>Email</th>
+                        <th>Телефон</th>
+                        <th width="100px">Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .}}
+                    <tr id="user-{{.ID}}" data-user-id="{{.ID}}">
+                        <td>
+                            <input type="checkbox" class="user-checkbox" onchange="updateSelection()">
+                        </td>
+                        <td>{{.ID}}</td>
+                        <td>{{.FirstName}}</td>
+                        <td>{{.LastName}}</td>
+                        <td>{{.Email}}</td>
+                        <td>{{.Phone}}</td>
+                        <td>
+                            <button class="btn-icon delete-single" onclick="deleteSingleUser('{{.ID}}', '{{.FirstName}} {{.LastName}}')" 
+                                    title="Удалить пользователя">
+                                🗑️
+                            </button>
+                        </td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
+        {{else}}
+        <div class="empty-state">
+            <h2>📝 Нет данных</h2>
+            <p>Пока нет сохранённых пользователей. Будьте первым!</p>
+            <a href="/" class="btn primary">Добавить данные</a>
+        </div>
+        {{end}}
+
+        <!-- Модальное окно подтверждения удаления -->
+        <div id="confirmModal" class="modal">
+            <div class="modal-content">
+                <h3>Подтверждение удаления</h3>
+                <p id="modalMessage">Вы уверены, что хотите удалить выбранных пользователей?</p>
+                <div class="modal-buttons">
+                    <button onclick="confirmDelete()" class="btn danger">Да, удалить</button>
+                    <button onclick="closeModal()" class="btn secondary">Отмена</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Сообщение о результате -->
+        <div id="message" class="message"></div>
+    </div>
+
+    <script>
+        let selectedUserIds = [];
+        let currentDeleteType = ''; // 'single' или 'multiple'
+        let currentSingleUserId = null;
+        let currentSingleUserName = '';
+
+        // Функции для работы с выделением
+        function toggleAllCheckboxes() {
+            const selectAll = document.getElementById('selectAllCheckbox').checked;
+            const checkboxes = document.querySelectorAll('.user-checkbox');
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAll;
+            });
+            
+            updateSelection();
+        }
+
+        function toggleSelectAll() {
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+            selectAllCheckbox.checked = !selectAllCheckbox.checked;
+            toggleAllCheckboxes();
+        }
+
+        function updateSelection() {
+            const checkboxes = document.querySelectorAll('.user-checkbox:checked');
+            selectedUserIds = [];
+            
+            checkboxes.forEach(checkbox => {
+                const row = checkbox.closest('tr');
+                const userId = parseInt(row.dataset.userId);
+                selectedUserIds.push(userId);
+            });
+            
+            // Обновляем счетчик и кнопку
+            const selectedCount = document.getElementById('selectedCount');
+            const deleteBtn = document.getElementById('deleteSelectedBtn');
+            
+            selectedCount.textContent = `Выбрано: ${selectedUserIds.length}`;
+            deleteBtn.disabled = selectedUserIds.length === 0;
+            
+            // Синхронизируем главный чекбокс
+            const totalCheckboxes = document.querySelectorAll('.user-checkbox').length;
+            const checkedCount = checkboxes.length;
+            document.getElementById('selectAllCheckbox').checked = checkedCount > 0 && checkedCount === totalCheckboxes;
+        }
+
+        // Функции удаления
+        function deleteSingleUser(id, name) {
+            currentDeleteType = 'single';
+            currentSingleUserId = id;
+            currentSingleUserName = name;
+            
+            showModal(`Вы уверены, что хотите удалить пользователя "${name}" (ID: ${id})?`);
+        }
+
+        function prepareDeleteSelected() {
+            if (selectedUserIds.length === 0) return;
+            
+            currentDeleteType = 'multiple';
+            showModal(`Вы уверены, что хотите удалить ${selectedUserIds.length} пользователей?`);
+        }
+
+        function showModal(message) {
+            const modal = document.getElementById('confirmModal');
+            const messageElement = document.getElementById('modalMessage');
+            
+            messageElement.textContent = message;
+            modal.style.display = 'block';
+        }
+
+        async function confirmDelete() {
+            try {
+                let response;
+                
+                if (currentDeleteType === 'single') {
+                    // Удаление одиночного пользователя
+                    response = await fetch(`/delete/${currentSingleUserId}`, {
+                        method: 'DELETE'
+                    });
+                } else {
+                    // Массовое удаление
+                    response = await fetch('/delete/', {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ user_ids: selectedUserIds })
+                    });
+                }
+
+                const result = await response.json();
+                
+                const messageDiv = document.getElementById('message');
+                if (result.success) {
+                    messageDiv.textContent = result.message;
+                    messageDiv.className = 'message success';
+                    
+                    // Удаляем строки из таблицы
+                    if (currentDeleteType === 'single') {
+                        const row = document.getElementById(`user-${currentSingleUserId}`);
+                        if (row) {
+                            row.style.opacity = '0';
+                            setTimeout(() => row.remove(), 300);
+                        }
+                    } else {
+                        // Удаляем все выбранные строки
+                        selectedUserIds.forEach(userId => {
+                            const row = document.getElementById(`user-${userId}`);
+                            if (row) {
+                                row.style.opacity = '0';
+                                setTimeout(() => row.remove(), 300);
+                            }
+                        });
+                        // Сбрасываем выделение
+                        selectedUserIds = [];
+                        updateSelection();
+                    }
+                    
+                    // Обновляем статистику
+                    updateStats();
+                } else {
+                    messageDiv.textContent = result.message;
+                    messageDiv.className = 'message error';
+                }
+                
+                // Автоматическое скрытие сообщения
+                setTimeout(() => {
+                    messageDiv.textContent = '';
+                    messageDiv.className = 'message';
+                }, 3000);
+                
+            } catch (error) {
+                const messageDiv = document.getElementById('message');
+                messageDiv.textContent = 'Ошибка при удалении пользователей';
+                messageDiv.className = 'message error';
+            }
+            
+            closeModal();
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('confirmModal');
+            modal.style.display = 'none';
+            currentDeleteType = '';
+            currentSingleUserId = null;
+            currentSingleUserName = '';
+        }
+
+        function updateStats() {
+            const rows = document.querySelectorAll('tbody tr');
+            const stats = document.querySelector('.stats');
+            
+            if (stats) {
+                const totalSpan = stats.querySelector('span:last-child');
+                if (totalSpan && rows.length > 0) {
+                    totalSpan.textContent = `Всего записей: ${rows.length}`;
+                } else if (rows.length === 0) {
+                    // Если строк не осталось, перезагружаем страницу
+                    setTimeout(() => location.reload(), 1000);
+                }
+            }
+        }
+
+        // Обработчики событий
+        window.onclick = function(event) {
+            const modal = document.getElementById('confirmModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        // Инициализация при загрузке
+        document.addEventListener('DOMContentLoaded', function() {
+            updateSelection();
+        });
+    </script>
+</body>
+</html>
