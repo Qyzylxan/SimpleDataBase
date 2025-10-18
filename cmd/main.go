@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -41,6 +42,19 @@ func main() {
 		port = "8080"
 	}
 
+	go exitCMD()
+
 	log.Printf("Сервер запущен на порту %s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
+
+}
+
+func exitCMD() {
+	for {
+		var q string
+		fmt.Fscan(os.Stdin, &q)
+		if q == "q" {
+			os.Exit(0)
+		}
+	}
 }
