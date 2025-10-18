@@ -5,6 +5,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"simpledatabase/internal/database"
 	"simpledatabase/internal/handlers"
@@ -50,6 +52,11 @@ func main() {
 }
 
 func exitCMD() {
+	exit := make(chan os.Signal, 1)
+	signal.Notify(exit, os.Interrupt, syscall.SIGTERM)
+
+	//stop := make(chan struct{})
+
 	for {
 		var q string
 		fmt.Fscan(os.Stdin, &q)
