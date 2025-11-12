@@ -146,7 +146,7 @@ func DeleteUsers(userIDs []int) (int64, error) {
 		idString[i] = fmt.Sprintf("$%d", i+1)
 		args[i] = id
 	}
-
+	// fmt.Println(userIDs)
 	// Формирование SQL-запроса (данные string в одинарных кавычках!)
 	query := fmt.Sprintf("DELETE FROM users WHERE id IN (%s)", strings.Join(idString, ","))
 
@@ -168,10 +168,14 @@ func DeleteUsers2(userIDs []int) (int64, error) {
 	for i, id := range userIDs {
 		idstr[i] = strconv.Itoa(id)
 	}
+	fmt.Println(userIDs)
 
-	deleteQuery := `DELETE FROM users WHERE id IN ($1);`
+	fmt.Println(idstr)
+	//fmt.Sprintf(strings.Join(userIDs, ","))
 
-	result, err := DB.Exec(deleteQuery, strings.Join(idstr, ","))
+	deleteQuery := fmt.Sprintf("DELETE FROM users WHERE id IN ($1);", strings.Join(idstr, ","))
+
+	result, err := DB.Exec(deleteQuery, userIDs)
 	if err != nil {
 		return 0, fmt.Errorf("ошибка удаления пользователей: %v", err)
 	}
