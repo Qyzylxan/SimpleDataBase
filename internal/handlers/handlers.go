@@ -115,7 +115,7 @@ func DeleteHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			// Удаление пользователей из базы
-			rowsAffected, err := database.DeleteUsers(deleteReq.UserIDs)
+			rowsAffected, err := database.DeleteUsers2(deleteReq.UserIDs)
 			if err != nil {
 				sendJSONResponse(w, false, "Ошибка удаления пользователей: "+err.Error(), http.StatusInternalServerError)
 				return

@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"simpledatabase/internal/models"
+	"strconv"
 	"strings"
 
 	_ "github.com/lib/pq"
@@ -160,4 +161,24 @@ func DeleteUsers(userIDs []int) (int64, error) {
 	}
 
 	return rowsAffected, nil
+}
+
+func DeleteUsers2(userIDs []int) (int64, error) {
+	idstr := make([]string, len(userIDs))
+	for i, id := range userIDs {
+		idstr[i] = strconv.Itoa(id)
+	}
+
+	deleteQuery := `DELETE FROM users WHERE id IN ($1);`
+
+	result, err := DB.Exec(deleteQuery, strings.Join(idstr, ","))
+	if err != nil {
+		return 0, fmt.Errorf("ошибка удаления пользователей: %v", err)
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("ошибка получения количества удаленных строк: %v", err)
+	}
+	return rows, nil
 }
