@@ -6,9 +6,9 @@ import (
 	"log"
 	"os"
 	"simpledatabase/internal/models"
-	"strconv"
 	"strings"
 
+	"github.com/google/uuid"
 	_ "github.com/lib/pq"
 )
 
@@ -163,19 +163,16 @@ func DeleteUsers(userIDs []int) (int64, error) {
 	return rowsAffected, nil
 }
 
-func DeleteUsers2(userIDs []int) (int64, error) {
-	idstr := make([]string, len(userIDs))
-	for i, id := range userIDs {
-		idstr[i] = strconv.Itoa(id)
-	}
+func DeleteUsers2(userIDs uuid.UUIDs) (int64, error) {
 	fmt.Println(userIDs)
 
-	fmt.Println(idstr)
 	//fmt.Sprintf(strings.Join(userIDs, ","))
 
-	deleteQuery := fmt.Sprintf("DELETE FROM users WHERE id IN ($1);", strings.Join(idstr, ","))
+	deleteQuery := fmt.Sprintf("DELETE FROM users WHERE id IN ($1);", strings.Join(userIDs.Strings(), ","))
 
-	result, err := DB.Exec(deleteQuery, userIDs)
+	fmt.Println(deleteQuery)
+
+	result, err := DB.Exec(deleteQuery)
 	if err != nil {
 		return 0, fmt.Errorf("ошибка удаления пользователей: %v", err)
 	}

@@ -28,7 +28,7 @@ type APIResponse struct {
 
 // DeleteRequest представляет запрос на удаление пользователей
 type DeleteRequest struct {
-	UserIDs []int `json:"user_ids"`
+	UserIDs uuid.UUIDs `json:"user_ids"`
 }
 
 // DeleteResponse представляет ответ на удаление пользователей
